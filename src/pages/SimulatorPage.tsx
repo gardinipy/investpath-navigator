@@ -1,93 +1,143 @@
-import { useState } from "react";
-import { compoundInterest, formatCurrency } from "@/lib/financial-utils";
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Calculator, TrendingUp, Wallet } from "lucide-react";
 
 export default function SimulatorPage() {
-  const [principal, setPrincipal] = useState(1000);
-  const [monthly, setMonthly] = useState(500);
-  const [rate, setRate] = useState(1);
-  const [years, setYears] = useState(10);
+  const balance = 1500.0;
 
-  const months = years * 12;
-  const data = compoundInterest(principal, rate, months, monthly);
-  const totalInvested = principal + monthly * months;
-  const finalValue = data[data.length - 1]?.total || 0;
-  const totalReturn = finalValue - totalInvested;
+  const [assetName, setAssetName] = useState("MXRF11");
+  const [assetPrice, setAssetPrice] = useState<number>(10.5);
+  const [dividend, setDividend] = useState<number>(0.11);
 
-  // Show yearly points only
-  const chartData = data.filter((_, i) => i % 12 === 0 || i === data.length - 1).map((d) => ({
-    ...d,
-    label: `Ano ${Math.floor(d.month / 12)}`,
-  }));
+  const maxShares = Math.floor(balance / assetPrice);
+  const totalInvested = maxShares * assetPrice;
+  const projectedIncome = maxShares * dividend;
+  const remainingBalance = balance - totalInvested;
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">Simulador de Investimentos</h1>
-        <p className="text-muted-foreground text-sm">Juros compostos com aportes mensais</p>
-      </motion.div>
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-100">
+          Simulador de Investimentos
+        </h1>
+        <p className="text-muted-foreground">
+          Veja quanto o seu saldo atual pode comprar de FIIs ou Ações e a
+          projeção de rendimento.
+        </p>
+      </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-6">
-        {/* Inputs */}
-        <div className="glass-card p-6 space-y-4">
-          <div>
-            <Label className="text-sm text-muted-foreground">Valor inicial (R$)</Label>
-            <Input type="number" value={principal} onChange={(e) => setPrincipal(Number(e.target.value))} min={0} className="bg-input border-border mt-1" />
-          </div>
-          <div>
-            <Label className="text-sm text-muted-foreground">Aporte mensal (R$)</Label>
-            <Input type="number" value={monthly} onChange={(e) => setMonthly(Number(e.target.value))} min={0} className="bg-input border-border mt-1" />
-          </div>
-          <div>
-            <Label className="text-sm text-muted-foreground">Taxa mensal (%)</Label>
-            <Input type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} min={0} step={0.01} className="bg-input border-border mt-1" />
-          </div>
-          <div>
-            <Label className="text-sm text-muted-foreground">Período (anos)</Label>
-            <Input type="number" value={years} onChange={(e) => setYears(Number(e.target.value))} min={1} max={50} className="bg-input border-border mt-1" />
-          </div>
-
-          <div className="border-t border-border pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total investido</span>
-              <span className="font-medium">{formatCurrency(totalInvested)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Rendimento</span>
-              <span className="font-medium text-primary">{formatCurrency(totalReturn)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-bold pt-2 border-t border-border">
-              <span>Valor final</span>
-              <span className="text-primary text-lg">{formatCurrency(finalValue)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="glass-card p-6">
-          <h3 className="font-heading font-semibold mb-4">Crescimento Patrimonial</h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(152, 60%, 48%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(152, 60%, 48%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 14%, 16%)" />
-              <XAxis dataKey="label" tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={{ stroke: "hsl(220, 14%, 16%)" }} />
-              <YAxis tick={{ fill: "hsl(215, 12%, 50%)", fontSize: 11 }} axisLine={{ stroke: "hsl(220, 14%, 16%)" }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ backgroundColor: "hsl(220, 18%, 12%)", border: "1px solid hsl(220, 14%, 20%)", borderRadius: "8px", color: "hsl(210, 20%, 92%)" }}
-                formatter={(value: number) => [formatCurrency(value), "Patrimônio"]}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="bg-zinc-900 border-zinc-800 text-zinc-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-zinc-100">
+              <Calculator className="h-5 w-5 text-teal-400" />
+              Configurar Ativo
+            </CardTitle>
+            <CardDescription className="text-zinc-400">
+              Insira os dados para o cálculo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="asset" className="text-zinc-300">
+                Código do Ativo
+              </Label>
+              <Input
+                id="asset"
+                value={assetName}
+                onChange={(e) => setAssetName(e.target.value.toUpperCase())}
+                className="bg-zinc-800 border-zinc-700 text-zinc-100"
               />
-              <Area type="monotone" dataKey="total" stroke="hsl(152, 60%, 48%)" strokeWidth={2.5} fill="url(#growthGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="price" className="text-zinc-300">
+                Preço Atual (R$)
+              </Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                value={assetPrice}
+                onChange={(e) => setAssetPrice(Number(e.target.value))}
+                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dividend" className="text-zinc-300">
+                Dividendo Último Mês (R$)
+              </Label>
+              <Input
+                id="dividend"
+                type="number"
+                step="0.01"
+                value={dividend}
+                onChange={(e) => setDividend(Number(e.target.value))}
+                className="bg-zinc-800 border-zinc-700 text-zinc-100"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-zinc-900 border-zinc-800 text-zinc-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-teal-400">
+              <TrendingUp className="h-5 w-5" />
+              Projeção de Rendimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex justify-between items-center border-b border-zinc-700 pb-4">
+              <div className="flex items-center gap-2 text-zinc-300">
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">Seu Saldo Disponível:</span>
+              </div>
+              <span className="text-xl font-bold text-zinc-100">
+                R$ {balance.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Poder de Compra:</span>
+                <span className="font-medium text-zinc-100">
+                  {maxShares} cotas de {assetName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Valor Investido:</span>
+                <span className="font-medium text-zinc-100">
+                  R$ {totalInvested.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Troco na Conta:</span>
+                <span className="font-medium text-zinc-100">
+                  R$ {remainingBalance.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-zinc-700">
+              <div className="flex justify-between items-center bg-teal-950/20 p-4 rounded-lg">
+                <span className="font-semibold text-teal-400">
+                  Ganhos Projetados:
+                </span>
+                <span className="text-2xl font-extrabold text-teal-400">
+                  + R$ {projectedIncome.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
