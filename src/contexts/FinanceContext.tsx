@@ -15,6 +15,7 @@ interface FinanceContextType {
   transactions: Transaction[];
   addTransaction: (t: Omit<Transaction, "id">) => void;
   removeTransaction: (id: string) => void;
+  importTransactions: (items: Omit<Transaction, "id">[]) => void;
 }
 
 const FinanceContext = createContext<FinanceContextType | null>(null);
@@ -163,9 +164,17 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const importTransactions = useCallback((items: Omit<Transaction, "id">[]) => {
+    const newItems: Transaction[] = items.map((t) => ({
+      ...t,
+      id: Math.random().toString(36).substring(2, 9),
+    }));
+    setTransactions((prev) => [...newItems, ...prev]);
+  }, []);
+
   return (
     <FinanceContext.Provider
-      value={{ transactions, addTransaction, removeTransaction }}
+      value={{ transactions, addTransaction, removeTransaction, importTransactions }}
     >
       {children}
     </FinanceContext.Provider>

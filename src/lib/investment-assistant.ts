@@ -96,6 +96,19 @@ const FINANCE_KEYWORDS = [
   "wealth",
   "compound",
   "interest",
+  "dashboard",
+  "painel",
+  "gastando",
+  "gasto",
+  "economizar",
+  "economia",
+  "categoria",
+  "extrato",
+  "transaç",
+  "transac",
+  "saldo",
+  "receita",
+  "importar",
 ];
 
 const OFF_TOPIC_PATTERNS = [
@@ -142,7 +155,12 @@ REGRAS OBRIGATÓRIAS (nunca quebre):
 5. Não invente cotações em tempo real; se perguntarem preços atuais, explique que o usuário deve consultar o Simulador do app ou fontes oficiais.
 6. Suas respostas são educativas, não constituem recomendação personalizada de investimento.
 7. Responda sempre em Português do Brasil, de forma clara e amigável, usando Markdown (negritos e listas) quando útil.
-8. Foque em conceitos como: CDB, Tesouro Direto, Ações, FIIs, renda fixa, renda variável, juros compostos, diversificação, reserva de emergência, inflação, Selic, CDI e organização de gastos.`;
+8. Foque em conceitos como: CDB, Tesouro Direto, Ações, FIIs, renda fixa, renda variável, juros compostos, diversificação, reserva de emergência, inflação, Selic, CDI e organização de gastos.
+9. Quando dados financeiros do dashboard do usuário forem fornecidos, use-os para personalizar suas respostas sobre gastos, categorias, economia e orçamento. Baseie-se apenas nos dados fornecidos — não invente valores ou transações.`;
+
+export const DASHBOARD_CONTEXT_PREFIX = `DADOS FINANCEIROS DO USUÁRIO (dashboard atual do InvestPath Navigator):
+
+`;
 
 export const OFF_TOPIC_REFUSAL =
   "Sou o **consultor financeiro** do InvestPath Navigator e só posso ajudar com dúvidas sobre **investimentos**, **educação financeira** e **organização do orçamento**. Por favor, reformule sua pergunta nesse contexto.";
@@ -195,16 +213,22 @@ function formatGeminiError(error: unknown): string {
   return "Erro desconhecido ao consultar o Gemini.";
 }
 
+function buildSystemInstruction(financialContext?: string): string {
+  if (!financialContext?.trim()) return SYSTEM_PROMPT;
+  return `${SYSTEM_PROMPT}\n\n${DASHBOARD_CONTEXT_PREFIX}${financialContext.trim()}`;
+}
+
 async function generateWithModel(
   apiKey: string,
   modelName: string,
   history: ChatTurn[],
   userMessage: string,
+  financialContext?: string,
 ): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: modelName,
-    systemInstruction: SYSTEM_PROMPT,
+    systemInstruction: buildSystemInstruction(financialContext),
   });
 
   const chatHistory = history.map((turn) => ({
@@ -226,6 +250,7 @@ async function generateWithModel(
 export async function askInvestmentAssistant(
   history: ChatTurn[],
   userMessage: string,
+  financialContext?: string,
 ): Promise<string> {
   if (!isInvestmentRelated(userMessage)) {
     return OFF_TOPIC_REFUSAL;
@@ -242,7 +267,13 @@ export async function askInvestmentAssistant(
 
   for (const modelName of GEMINI_MODELS) {
     try {
-      return await generateWithModel(apiKey, modelName, history, userMessage);
+      return await generateWithModel(
+        apiKey,
+        modelName,
+        history,
+        userMessage,
+        financialContext,
+      );
     } catch (error) {
       lastError = error;
       const message =

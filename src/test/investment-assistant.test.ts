@@ -21,4 +21,13 @@ describe("isInvestmentRelated", () => {
     );
     expect(isInvestmentRelated("Qual a capital da França?")).toBe(false);
   });
+
+  it("aceita perguntas sobre dashboard e gastos", () => {
+    expect(
+      isInvestmentRelated("Com base no meu dashboard, onde estou gastando mais?"),
+    ).toBe(true);
+    expect(
+      isInvestmentRelated("O que deveria economizar com base no dashboard?"),
+    ).toBe(true);
+  });
 });

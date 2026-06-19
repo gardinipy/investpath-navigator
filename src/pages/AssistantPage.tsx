@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, AlertTriangle } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Send, Bot, User, Loader2, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { useFinance } from "@/contexts/FinanceContext";
+import { buildFinancialContext } from "@/lib/financial-context";
 import {
   askInvestmentAssistant,
   getGeminiApiKey,
@@ -17,9 +19,20 @@ interface Message {
 }
 
 const WELCOME_MESSAGE =
-  "Olá! Sou o **consultor financeiro** do **InvestPath Navigator**. Posso tirar suas dúvidas **somente** sobre investimentos, educação financeira e organização do orçamento — como CDB, Tesouro Direto, Ações, FIIs, juros compostos e planejamento de gastos. Como posso ajudar?";
+  "Olá! Sou o **consultor financeiro** do **InvestPath Navigator**. Tenho acesso aos **dados do seu dashboard** — posso analisar onde você gasta mais, sugerir onde economizar e tirar dúvidas sobre investimentos (CDB, Tesouro, Ações, FIIs, etc.). Como posso ajudar?";
+
+const SUGGESTED_QUESTIONS = [
+  "Com base no meu dashboard, onde estou gastando mais?",
+  "O que deveria economizar com base no meu dashboard?",
+  "Qual a diferença entre CDB e Tesouro Selic?",
+];
 
 export default function AssistantPage() {
+  const { transactions } = useFinance();
+  const financialContext = useMemo(
+    () => buildFinancialContext(transactions),
+    [transactions],
+  );
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -36,10 +49,9 @@ export default function AssistantPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userText = input.trim();
+  const send = async (text?: string) => {
+    const userText = (text ?? input).trim();
+    if (!userText || isLoading) return;
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -58,7 +70,11 @@ export default function AssistantPage() {
           content: message.content,
         }));
 
-      const responseText = await askInvestmentAssistant(history, userText);
+      const responseText = await askInvestmentAssistant(
+        history,
+        userText,
+        financialContext,
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -99,9 +115,25 @@ export default function AssistantPage() {
           Consultor de Investimentos
         </h1>
         <p className="text-muted-foreground text-sm">
-          Assistente de IA especializado em finanças — powered by Google Gemini
+          Assistente de IA com acesso ao seu dashboard — powered by Google Gemini
         </p>
       </motion.div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {SUGGESTED_QUESTIONS.map((q) => (
+          <Button
+            key={q}
+            variant="outline"
+            size="sm"
+            className="text-xs h-auto py-1.5 px-3"
+            onClick={() => send(q)}
+            disabled={isLoading}
+          >
+            <Sparkles className="w-3 h-3 mr-1.5 shrink-0" />
+            {q}
+          </Button>
+        ))}
+      </div>
 
       {!hasApiKey && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
@@ -186,12 +218,12 @@ export default function AssistantPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Ex.: Qual a diferença entre CDB e Tesouro Selic?"
+          placeholder="Ex.: Com base no meu dashboard, onde estou gastando mais?"
           className="bg-input border-border"
           disabled={isLoading}
         />
         <Button
-          onClick={send}
+          onClick={() => send()}
           size="icon"
           disabled={!input.trim() || isLoading}
         >
