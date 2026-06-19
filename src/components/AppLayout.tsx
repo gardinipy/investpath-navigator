@@ -7,7 +7,7 @@ const navItems = [
   { to: "/transactions", label: "Transações", icon: ArrowUpDown },
   { to: "/budget", label: "Orçamento", icon: PiggyBank },
   { to: "/simulator", label: "Simulador", icon: TrendingUp },
-  { to: "/assistant", label: "Assistente", icon: MessageCircle },
+  { to: "/assistant", label: "Consultor", icon: MessageCircle },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
