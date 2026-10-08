@@ -4,6 +4,7 @@ import {
   inferType,
   parseBrazilianNumber,
   parseCsvContent,
+  parseImportContent,
   parseOfxContent,
   parseQifContent,
 } from "@/lib/transaction-import";
@@ -100,5 +101,72 @@ describe("parseImportDate via CSV", () => {
 
     const result = parseCsvContent(csv);
     expect(result.transactions).toHaveLength(2);
+  });
+
+  it("aceita data com horário e BOM", () => {
+    const csv = `\uFEFFData;Valor;Descrição
+15/06/2026 14:30:00;-80,00;Padaria`;
+
+    const result = parseCsvContent(csv);
+    expect(result.transactions).toHaveLength(1);
+    expect(result.transactions[0].category).toBe("Alimentação");
+  });
+
+  it("ignora linhas extras antes do cabeçalho", () => {
+    const csv = `Agência;0001
+Conta;12345-6
+
+Data;Histórico;Valor
+01/06/2026;Uber;-25,90`;
+
+    const result = parseCsvContent(csv);
+    expect(result.transactions).toHaveLength(1);
+    expect(result.transactions[0].category).toBe("Transporte");
+  });
+
+  it("classifica receita pelo sinal quando o extrato é assinado", () => {
+    const csv = `date,title,amount
+2026-06-01,Pix recebido,200.00
+2026-06-02,Mercado,-80.00`;
+
+    const result = parseCsvContent(csv);
+    expect(result.transactions).toHaveLength(2);
+    expect(result.transactions[0].type).toBe("income");
+    expect(result.transactions[1].type).toBe("expense");
+  });
+});
+
+describe("parseOfxContent extra", () => {
+  it("aceita OFX sem tags de fechamento", () => {
+    const ofx = `OFXHEADER:100
+<OFX>
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20260601120000[-3:BRT]
+<TRNAMT>-45.00
+<MEMO>Uber
+<STMTTRN>
+<TRNTYPE>CREDIT
+<DTPOSTED>20260605
+<TRNAMT>1200.00
+<MEMO>Pix recebido
+`;
+
+    const result = parseOfxContent(ofx);
+    expect(result.transactions).toHaveLength(2);
+    expect(result.transactions[0].type).toBe("expense");
+    expect(result.transactions[1].type).toBe("income");
+  });
+});
+
+describe("parseImportContent", () => {
+  it("detecta OFX em arquivo .txt", () => {
+    const ofx = `<OFX><STMTTRN>
+<DTPOSTED>20260601
+<TRNAMT>-10.00
+<MEMO>Teste
+</STMTTRN></OFX>`;
+    const result = parseImportContent(ofx, "txt");
+    expect(result.transactions).toHaveLength(1);
   });
 });

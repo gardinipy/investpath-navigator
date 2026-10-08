@@ -47,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="glass-card p-3 mt-4">
           <p className="text-xs text-muted-foreground">
-            Dados de demonstração. Conecte ao Lovable Cloud para persistência.
+            Dados de demonstração. Os lançamentos ficam salvos neste navegador.
           </p>
         </div>
       </aside>
